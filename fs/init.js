@@ -4,7 +4,7 @@ load('api_mqtt.js');
 load('api_timer.js');
 
 let topic = '/devices/' + Cfg.get('device.id') + '/events';
-let dht = DHT.create(14, DHT.AM2302);
+let dht = DHT.create(14, DHT.AM2302);  //14 is the pin which is connected from DHT22 to ESP8266
 
 Timer.set(5000, true, function() {
   let msg = JSON.stringify({ t: dht.getTemp(), h: dht.getHumidity() });
