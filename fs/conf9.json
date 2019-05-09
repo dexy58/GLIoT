@@ -13,8 +13,8 @@
   "wifi": {
     "sta": {
       "enable": true,
-      "ssid": "SmartHomeAP",
-      "pass": "smartHome"
+      "ssid": "GL-Visitors",
+      "pass": "vxti7581"
     },
     "ap": {
       "enable": false
