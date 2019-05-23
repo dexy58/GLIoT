@@ -1,11 +1,11 @@
 {
   "device": {
-    "id": "esp8266_F0AA31"
+    "id": "device01"
   },
   "mqtt": {
     "enable": true,
-    "server": "192.168.1.65:1883",
-    "user": "openhabian"
+    "server": "192.168.1.162:1883",
+	"user": "openhabian"
   },
   "aws": {
     "thing_name": "esp8266_F0AA31"
@@ -13,8 +13,8 @@
   "wifi": {
     "sta": {
       "enable": true,
-      "ssid": "GL-Visitors",
-      "pass": "vxti7581"
+      "ssid": "SmartHomeAP",
+      "pass": "smarthome"
     },
     "ap": {
       "enable": false
