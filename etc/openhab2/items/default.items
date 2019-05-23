@@ -1,0 +1,18 @@
+Group    Home                      "SmartHome GlobalLogic"   <house>                                       ["Building"]
+
+Group    F3                        "Third Floor"             <attic>         (Home)                        ["Attic"]
+
+Group    Bedroom                   "Bedroom"                 <bedroom>       (Home)                        ["Bedroom"]
+Group    GuestRoom                 "Guest Room"              <parents_4_3>   (Home)                        ["Room"]
+Group    StorageRoom               "Storage Room"            <suitcase>      (Home)                        ["Room"]
+Number   Bedroom_Temperature       "Temperature"             <temperature>   (Bedroom, gTemperature)       ["Temperature"]   {channel="mqtt:topic:f7056111:temperatureChannel"}
+Number   Bedroom_Humidity          "Humidity"                <humidity>      (Bedroom, gHumidity)          ["Humidity"]      {channel="mqtt:topic:f7056111:humidityChannel"}
+Switch  Bedroom_Light "Light" <light> (Bedroom, gLight) ["Lighting", "Switchable"] {channel="mqtt:topic:f7056111:Switch_light"}
+Number   GuestRoom_Temperature     "Temperature"             <temperature>   (GuestRoom, gTemperature)     ["Temperature"]   {channel=""}
+Number   GuestRoom_Humidity        "Humidity"                <humidity>      (GuestRoom, gHumidity)        ["Humidity"]      {channel=""}
+Switch GuestRoom_Light "Light" <light> (GuestRoom, glight) ["Lighting", "Switchable"] {channel=""}
+Number   StorageRoom_Temperature   "Temperature"             <temperature>   (StorageRoom, gTemperature)   ["Temperature"]   {channel=""}
+Number   StorageRoom_Humidity      "Humidity"                <humidity>      (StorageRoom, gHumidity)      ["Humidity"]      {channel=""}
+Switch StorageRoom_Light "Light" <light> (StorageRoom, gLight) ["Lighting", "Switchable"] {channel=""}
+Group:Number:AVG   gTemperature   "Temperature"   <temperature>   (Home)   ["Temperature"]
+Group:Number:AVG   gHumidity      "Humidity"      <humidity>      (Home)   ["Humidity"]
