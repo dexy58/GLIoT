@@ -14,11 +14,11 @@
  *             Reader/PCD   MCU      
  * Signal      Pin          Pin      
  * ----------------------------------
- * RST/Reset   RST          GPIO16        
+ * RST/Reset   RST          GPIO0        
  * SPI SS      SDA(SS)      GPIO4       
  * SPI MOSI    MOSI         GPIO13
  * SPI MISO    MISO         GPIO12
- * SPI SCK     SCK          GPIO15
+ * SPI SCK     SCK          GPIO14
  * 3.3V        3.3V         3.3V
  * GND         GND          GND
  */
