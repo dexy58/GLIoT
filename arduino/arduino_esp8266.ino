@@ -116,16 +116,22 @@ void loop() {
       Serial.println();
       Serial.println(UIDstring);
       if(UIDstring == "575593" || UIDstring=="165302522"){
-        Serial.print("Access GRANTED!");
-        digitalWrite(relayPin, HIGH);
-        char onRelay[4] ="ON";
-        client.publish("home/device03/switchLight", onRelay);
+        Serial.println("Access GRANTED!");
+        if(digitalRead(relayPin)== LOW){
+          Serial.println("Turning light ON!");
+          digitalWrite(relayPin, HIGH);
+          char onRelay[4] ="ON";
+          client.publish("home/device03/switchLight", onRelay);          
+        }
+        else if(digitalRead(relayPin)==HIGH){
+          Serial.println("Turning light OFF!");
+          digitalWrite(relayPin, LOW);
+          char offRelay[5] ="OFF";
+          client.publish("home/device03/switchLight", offRelay);
+        }
       }
       else{
-        Serial.print("Access DENIED!");
-        digitalWrite(relayPin, LOW);
-        char offRelay[5] ="OFF";
-        client.publish("home/device03/switchLight", offRelay);
+        Serial.println("Access DENIED!");
       }
     }     
     TempAndHumidity measurement = dht.getTempAndHumidity(); 
