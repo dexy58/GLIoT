@@ -3,7 +3,7 @@
 Servo servo_1; // Giving name to servo.
 
 int trigPin = 15;    // Trigger
-int echoPin = 2;    // Echo
+int echoPin = 14;    // Echo
 long duration, cm, inches;
 
 long distanceArray[180];
