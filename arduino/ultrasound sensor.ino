@@ -56,11 +56,11 @@ void loop() {
       Serial.println(cm);
       Serial.print("Izmjereno prije: ");
       Serial.println(distanceArray[i]);
-      if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>=0 && counter<=3){
+      if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>=0 && counter<=4){
         Serial.println("Potencijalni provalnik");
         counter++;
       }
-      else if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>3){
+      else if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>4){
         Serial.println("Provalnik");
         counter=0;
         flag = true;
@@ -76,6 +76,6 @@ void loop() {
   }
   for(int returnNow = returnBack; returnNow>=1; returnNow-=1){                                
     servo_1.write(returnNow);              // tell servo to go to position in variable 'pos' 
-    delay(15);                       // waits 15ms for the servo to reach the position 
+    delay(10);                       // waits 15ms for the servo to reach the position 
   } 
 }
