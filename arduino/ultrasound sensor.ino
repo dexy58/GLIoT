@@ -40,6 +40,7 @@ void loop() {
     delay(1000);
   }
   else{
+    counter = 0;
     servo_1.write(0);
     delay(250);
     for(int i=0;i<180;i++){
