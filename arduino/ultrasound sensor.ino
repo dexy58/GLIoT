@@ -102,7 +102,7 @@ void loop() {
           break;
         }
         else{
-          distanceArray[i]=cm;
+          distanceArray[i]=(distanceArray[i]+cm)/2.0;
           counter=0;
         }     
         delay(50);      
