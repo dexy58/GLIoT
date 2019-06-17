@@ -35,7 +35,7 @@ void loop() {
       duration = pulseIn(echoPin, HIGH);
       cm = (duration/2) / 29.1;
       distanceArray[i] = cm;
-      delay(20);
+      delay(50);
     }
     returnBack = 180;
     flag = false;
