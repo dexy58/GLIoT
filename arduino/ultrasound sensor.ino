@@ -37,7 +37,7 @@ void loop() {
       distanceArray[i] = cm;
       delay(50);
     }
-    returnBack = 180;
+    returnBack = 179;
     flag = false;
     delay(1000);
   }
@@ -58,11 +58,11 @@ void loop() {
       Serial.println(cm);
       Serial.print("Izmjereno prije: ");
       Serial.println(distanceArray[i]);
-      if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>=0 && counter<=4){
+      if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>=0 && counter<=3){
         Serial.println("Potencijalni provalnik");
         counter++;
       }
-      else if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>4){
+      else if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>3){
         Serial.println("Provalnik");
         counter=0;
         flag = true;
@@ -90,11 +90,11 @@ void loop() {
         Serial.println(cm);
         Serial.print("Izmjereno prije: ");
         Serial.println(distanceArray[i]);
-        if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>=0 && counter<=4){
+        if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>=0 && counter<=3){
           Serial.println("Potencijalni provalnik");
           counter++;
         }
-        else if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>4){
+        else if(abs(cm-distanceArray[i])>distanceArray[i]*0.4 && counter>3){
           Serial.println("Provalnik");
           counter=0;
           flag = true;
