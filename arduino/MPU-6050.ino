@@ -53,7 +53,7 @@ void loop() {
   Serial.print(" Gx: "); Serial.print(Gx);
   Serial.print(" Gy: "); Serial.print(Gy);
   Serial.print(" Gz: "); Serial.println(Gz);
-  if((Gx > 4 || Gx < -6) && (Gy > 4 || Gy  < -6) && (Gz > 4 || Gz  < -6)){
+  if(Gx > 4 || Gx < -6 && Gy > 4 || Gy  < -6 && Gz > 4 || Gz  < -6){
     Serial.println("Potres!!!");
   }
 
