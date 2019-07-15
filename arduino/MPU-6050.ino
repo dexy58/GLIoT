@@ -26,10 +26,16 @@ const uint8_t MPU6050_REGISTER_SIGNAL_PATH_RESET  = 0x68;
 
 int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
 
+int relayPin = 16;
+int temperatureMax = 26;
+int temperatureMin = 24;
+
 void setup() {
   Serial.begin(9600);
   Wire.begin(sda, scl);
   MPU6050_Init();
+  pinMode(relayPin, OUTPUT);
+  digitalWrite(relayPin, LOW);
 }
 
 void loop() {
@@ -56,7 +62,13 @@ void loop() {
   if(Gx > 4 || Gx < -6 && Gy > 4 || Gy  < -6 && Gz > 4 || Gz  < -6){
     Serial.println("Potres!!!");
   }
-
+  Serial.println(digitalRead(relayPin));
+  if(T>=temperatureMax && digitalRead(relayPin)==0){
+    digitalWrite(relayPin, HIGH);
+  }
+  else if (T<=temperatureMin && digitalRead(relayPin==1)){
+    digitalWrite(relayPin, LOW);
+  }
   delay(250);
 }
 
