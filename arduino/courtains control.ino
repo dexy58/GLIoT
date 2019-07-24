@@ -62,6 +62,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void loop(){
+   client.loop();
 }
 
 void move(int motor, int speed, int direction){
