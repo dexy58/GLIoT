@@ -12,7 +12,12 @@ int PWMA = 14; //Speed control
 int AIN1 = 12; //Direction
 int AIN2 = 13; //Direction
 
+boolean flag = true;
+
 void setup(){
+   delay(5000);
+   Serial.begin(9600);
+   while (!Serial);
    WiFi.begin("SmartHomeAP", "smarthome");
    Serial.print("Connecting");
    while (WiFi.status() != WL_CONNECTED)
@@ -28,9 +33,9 @@ void setup(){
    while (!client.connected()) {
      Serial.println("Connecting to MQTT...");
      if(client.connect("device01", "openhabian", "openhabian" )) {
-       Serial.println("connected");  
+       Serial.println("Connected");  
      }else {
-       Serial.print("failed with state ");
+       Serial.print("Failed with state ");
        Serial.print(client.state());
        delay(2000); 
      }
@@ -46,15 +51,17 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived in topic: ");
   Serial.println(topic);
   if (strcmp(topic,"home/device01/switchCurtains")==0){
-    if (!strncmp((char *)payload, "ON", length)) {
+    if (!strncmp((char *)payload, "ON", length) && flag==false) {
       Serial.print("ON");
       move(1,200,0);
+      flag=true;
       delay(2500);
       stop();
     }
-    else{
+    else if(!strncmp((char *)payload, "OFF", length) && flag==true){
       Serial.print("OFF");
       move(1,200,1);
+      flag = false;
       delay(2500);
       stop();
     }
@@ -62,7 +69,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void loop(){
-   client.loop();
+  client.loop();
 }
 
 void move(int motor, int speed, int direction){
