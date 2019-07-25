@@ -16,9 +16,10 @@ sitemap smarthome_globallogic label="SmartHome GlobalLogic" {
             Default item=StorageRoom_Humidity label="Storage Room"
         }
 	Text label="Light" icon="light" {
-	    Default item=Bedroom_Light label="Bedroom"
-	    Default item=GuestRoom_Light label="Guest Room"
-	    Default item=StorageRoom_Light label="Storage Room"
+		Default item=Bedroom_Light label="Bedroom"
+		Default item=GuestRoom_Light label="Guest Room"
+		Default item=StorageRoom_Light label="Storage Room"
+           	Default item=Bedroom_Curtains label="Curtains"
 	}
     }
 }
