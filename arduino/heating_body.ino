@@ -43,13 +43,13 @@ void loop() {
   T = (double)Temperature/340+36.53; //temperature formula
   Serial.print(" T: "); Serial.println(T);
   if(T<=15){
-    analogWrite(heating_body, 255);
+    analogWrite(heating_body, 1024);
   }
   else if(T>15 && T<=19){
-    analogWrite(heating_body, 127);
+    analogWrite(heating_body, 613);
   }
   else if(T>19 && T<=22){
-    analogWrite(heating_body, 64);
+    analogWrite(heating_body, 204);
   }
   else if(T>22){
     analogWrite(heating_body, 0);
