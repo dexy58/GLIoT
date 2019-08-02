@@ -139,8 +139,13 @@ void loop() {
     Serial.println(measurement.temperature);
     Serial.print("Humidity: ");
     Serial.println(measurement.humidity);
-    dtostrf(measurement.temperature,5,2,temperatureChar);
-    dtostrf(measurement.humidity,5,2,humidityChar);  
+    //dtostrf(measurement.temperature,5,2,temperatureChar);
+    //dtostrf(measurement.humidity,5,2,humidityChar); 
+    //Serial.println(dtostrf(measurement.humidity,5,2,humidityChar));
+    sprintf(temperatureChar, "%f", measurement.temperature);
+    sprintf(humidityChar, "%f", measurement.humidity);
+    Serial.println(temperatureChar);
+    Serial.println(humidityChar);
     client.publish("home/device03/temperature", temperatureChar);
     client.publish("home/device03/humidity", humidityChar);
     delay(2000);
