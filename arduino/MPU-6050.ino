@@ -66,7 +66,7 @@ void loop() {
   if(T>=temperatureMax && digitalRead(relayPin)==0){
     digitalWrite(relayPin, HIGH);
   }
-  else if (T<=temperatureMin && digitalRead(relayPin==1)){
+  else if (T<=temperatureMin && digitalRead(relayPin)==1){
     digitalWrite(relayPin, LOW);
   }
   delay(250);
