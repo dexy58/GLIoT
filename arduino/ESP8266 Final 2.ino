@@ -7,8 +7,8 @@ PubSubClient client(espClient);
 
 void callback(char* topic, byte* payload, unsigned int length);
 
-int trigPin = 15;    // Trigger
-int echoPin = 14;    // Echo
+int trigPin = 13;    // Trigger
+int echoPin = 12;    // Echo
 long duration, cm, inches;
 long lastDistance;
 boolean flagDistance = false;
@@ -39,11 +39,18 @@ const uint8_t MPU6050_REGISTER_ACCEL_XOUT_H =  0x3B;
 const uint8_t MPU6050_REGISTER_SIGNAL_PATH_RESET  = 0x68;
 
 int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
+
+int relayPinBulb = 16;
+int relayPinFan = 15;
+int temperatureMax = 26;
+int temperatureMin = 24;
+
+int heating_body = 14;
  
 void setup() {
   delay(5000);
   //Serial Port begin
-  Serial.begin (9600);
+  Serial.begin(9600);
   WiFi.begin("SmartHomeAP", "smarthome");
   Serial.print("Connecting");
   while (WiFi.status() != WL_CONNECTED){
@@ -75,6 +82,11 @@ void setup() {
   //for MPU-6050
   Wire.begin(sda, scl);
   MPU6050_Init();
+  pinMode(relayPinFan, OUTPUT);
+  pinMode(relayPinBulb, OUTPUT);
+  digitalWrite(relayPinFan, LOW);
+  //digitalWrite(relayPinBulb, HIGH);
+  analogWrite(heating_body, 0); //disable pwm at beginning
 }
 
 void callback(char* topic, byte* payload, unsigned int length) { 
@@ -104,6 +116,16 @@ void loop() {
   Serial.print(" Gz: "); Serial.println(Gz);
   if(Gx > 4 || Gx < -6 && Gy > 4 || Gy  < -6 && Gz > 4 || Gz  < -6){
     Serial.println("Potres!!!");
+  }
+  Serial.println(digitalRead(relayPinBulb));
+  Serial.println(digitalRead(relayPinFan));
+  if(T>=temperatureMax && digitalRead(relayPinFan)==0){
+    Serial.println("Turn on Fan");
+    digitalWrite(relayPinFan, HIGH);
+  }
+  else if (T<=temperatureMin && digitalRead(relayPinFan)==1){
+    Serial.println("Turn of Fan");
+    digitalWrite(relayPinFan, LOW);
   }
   
   // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
@@ -142,7 +164,18 @@ void loop() {
       counterDistance=0;
     }
   }
-  
+  if(T<=15){
+    analogWrite(heating_body, 1024);
+  }
+  else if(T>15 && T<=19){
+    analogWrite(heating_body, 613);
+  }
+  else if(T>19 && T<=22){
+    analogWrite(heating_body, 204);
+  }
+  else if(T>22){
+    analogWrite(heating_body, 0);
+  }
   Serial.print(inches);
   Serial.print("in, ");
   Serial.print(cm);
@@ -150,7 +183,6 @@ void loop() {
   Serial.print(lastDistance);
   Serial.print("cm");
   Serial.println();
-  
   delay(250);
 }
 
