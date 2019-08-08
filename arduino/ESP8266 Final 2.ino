@@ -44,8 +44,8 @@ int relayPinBulb = 16;
 int relayPinFan = 15;
 int temperatureMax = 26;
 int temperatureMin = 24;
-
 int heating_body = 14;
+char temperatureChar[10];
  
 void setup() {
   delay(5000);
@@ -85,15 +85,35 @@ void setup() {
   pinMode(relayPinFan, OUTPUT);
   pinMode(relayPinBulb, OUTPUT);
   digitalWrite(relayPinFan, LOW);
-  //digitalWrite(relayPinBulb, HIGH);
+  client.subscribe("home/device02/switchLight");
   analogWrite(heating_body, 0); //disable pwm at beginning
 }
 
 void callback(char* topic, byte* payload, unsigned int length) { 
-  
+  Serial.print("Message arrived in topic: ");
+  Serial.println(topic);
+  if (strcmp(topic,"home/device02/switchLight")==0){
+    if (!strncmp((char *)payload, "ON", length)) {
+      Serial.print("ON");
+      digitalWrite(relayPinBulb, HIGH);
+    }
+    else{
+      Serial.print("OFF");
+      digitalWrite(relayPinBulb, LOW);
+    }
+  }
+  else{
+    Serial.print("Message:");
+    for (int i = 0; i < length; i++) {
+      Serial.print((char)payload[i]);
+    }
+  }
+  Serial.println();
+  Serial.println("-----------------------"); 
 }
  
 void loop() {
+  client.loop();
   double Ax, Ay, Az, T, Gx, Gy, Gz;
   
   Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
@@ -106,6 +126,7 @@ void loop() {
   Gx = (double)GyroX/GyroScaleFactor;
   Gy = (double)GyroY/GyroScaleFactor;
   Gz = (double)GyroZ/GyroScaleFactor;
+  float temperature = (float)T;
 
   Serial.print("Ax: "); Serial.print(Ax);
   Serial.print(" Ay: "); Serial.print(Ay);
@@ -176,6 +197,8 @@ void loop() {
   else if(T>22){
     analogWrite(heating_body, 0);
   }
+  sprintf(temperatureChar, "%f", temperature);
+  client.publish("home/device02/temperature", temperatureChar);
   Serial.print(inches);
   Serial.print("in, ");
   Serial.print(cm);
