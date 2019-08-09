@@ -148,7 +148,7 @@ void loop() {
     Serial.println(humidityChar);
     client.publish("home/device03/temperature", temperatureChar);
     client.publish("home/device03/humidity", humidityChar);
-    delay(2000);
+    delay(500);
 }
 
 void dump_byte_array(byte *buffer, byte bufferSize) {
