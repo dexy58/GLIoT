@@ -1,0 +1,25 @@
+sitemap smarthome_globallogic label="SmartHouse GlobalLogic" {
+    Frame {
+        Group item=Bedroom
+        Group item=GuestRoom
+        //Group item=StorageRoom
+    }
+    Frame {
+        Text label="Temperature" icon="temperature" {
+            Default item=Bedroom_Temperature label="Bedroom"
+            Default item=GuestRoom_Temperature label="Guest Room"
+            Default item=StorageRoom_Temperature label="Storage Room"
+        }
+	Text label="Humidity" icon="humidity" {
+            Default item=Bedroom_Humidity label="Bedroom"
+            Default item=GuestRoom_Humidity label="Guest Room"
+            Default item=StorageRoom_Humidity label="Storage Room"
+        }
+	Text label="Light" icon="light" {
+	    Default item=Bedroom_Light label="Bedroom"
+	    Default item=GuestRoom_Light label="Guest Room"
+	    Default item=StorageRoom_Light label="Storage Room"
+            Default item=Bedroom_Curtains label="Crutains"
+	}
+    }
+}
