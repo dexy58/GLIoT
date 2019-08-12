@@ -8,6 +8,7 @@ Group    GuestRoom                 "Guest Room"              <parents_4_3>   (Ho
 Number   Bedroom_Temperature       "Temperature"             <temperature>   (Bedroom, gTemperature)       ["Temperature"]   {channel="mqtt:topic:f7056111:temperatureChannel"}
 //Number   Bedroom_Humidity          "Humidity"                <humidity>      (Bedroom, gHumidity)          ["Humidity"]      {channel="mqtt:topic:f7056111:humidityChannel"}
 Switch  Bedroom_Light "Light" <light> (Bedroom, gLight) ["Lighting", "Switchable"] {channel="mqtt:topic:f7056111:Switch_light"}
+Switch Bedroom_Alarm "Alarm" <light> (Bedroom, gLight) ["Lighting", "Switchable"] {channel="mqtt:topic:f7056111:alarmSwitch"}
 Number   GuestRoom_Temperature     "Temperature"             <temperature>   (GuestRoom, gTemperature)     ["Temperature"]   {channel="mqtt:topic:f7056111:tempChannel2"}
 Number   GuestRoom_Humidity        "Humidity"                <humidity>      (GuestRoom, gHumidity)        ["Humidity"]      {channel="mqtt:topic:f7056111:humidityChannel2"}
 Switch GuestRoom_Light "Light" <light> (GuestRoom, gLight) ["Lighting", "Switchable"] {channel="mqtt:topic:f7056111:lightSwitch02"}
@@ -17,4 +18,3 @@ Switch GuestRoom_Light "Light" <light> (GuestRoom, gLight) ["Lighting", "Switcha
 //Switch Bedroom_Curtains "Curtains" <light> (Bedroom, gLight) ["Lighting", "Switchable"] {channel="mqtt:topic:f7056111:curtainSwitch01"}
 Group:Number:AVG   gTemperature   "Temperature"   <temperature>   (Home)   ["Temperature"]
 Group:Number:AVG   gHumidity      "Humidity"      <humidity>      (Home)   ["Humidity"]
-
