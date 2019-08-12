@@ -19,7 +19,8 @@ sitemap smarthome_globallogic label="SmartHouse GlobalLogic" {
 	    Default item=Bedroom_Light label="Bedroom"
 	    Default item=GuestRoom_Light label="Guest Room"
 	    Default item=StorageRoom_Light label="Storage Room"
-            Default item=Bedroom_Curtains label="Crutains"
+            Default item=Bedroom_Curtains label="Bedroom Curtains"
+	    Default item=Bedroom_Alarm label="Bedroom alarm"
 	}
     }
 }
