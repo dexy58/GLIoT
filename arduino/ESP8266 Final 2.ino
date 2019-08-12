@@ -13,6 +13,7 @@ long duration, cm, inches;
 long lastDistance;
 boolean flagDistance = false;
 int counterDistance = 0;
+boolean alarmFlag = false;
 
 // MPU6050 Slave Device Address
 const uint8_t MPU6050SlaveAddress = 0x68;
@@ -86,6 +87,7 @@ void setup() {
   pinMode(relayPinBulb, OUTPUT);
   digitalWrite(relayPinFan, LOW);
   client.subscribe("home/device02/switchLight");
+  client.subscribe("home/device02/alarmSwitch");
   analogWrite(heating_body, 0); //disable pwm at beginning
 }
 
@@ -100,6 +102,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
     else{
       Serial.print("OFF");
       digitalWrite(relayPinBulb, LOW);
+    }
+  }
+  else if (strcmp(topic,"home/device02/alarmSwitch")==0){
+    if (!strncmp((char *)payload, "ON", length) && alarmFlag==false) {
+      alarmFlag=true;
+      Serial.println("Ukljucen alarm");
+    }
+    else if(!strncmp((char *)payload, "OFF", length) && alarmFlag==true){
+      alarmFlag=false;
+      Serial.println("Iskljucen alarm");
     }
   }
   else{
@@ -138,7 +150,9 @@ void loop() {
   if(Gx > 4 || Gx < -6 && Gy > 4 || Gy  < -6 && Gz > 4 || Gz  < -6){
     Serial.println("Potres!!!");
   }
+  Serial.print("relayPinBulb: ");
   Serial.println(digitalRead(relayPinBulb));
+  Serial.print("relayPinFan: ");
   Serial.println(digitalRead(relayPinFan));
   if(T>=temperatureMax && digitalRead(relayPinFan)==0){
     Serial.println("Turn on Fan");
@@ -172,11 +186,15 @@ void loop() {
   }
   else if(flagDistance == true){
     if(abs(cm-lastDistance)>lastDistance*0.4 && counterDistance>=0 && counterDistance<=3){
-      Serial.println("Potencijalni provalnik");
+      if(alarmFlag == true){
+        Serial.println("Potencijalni provalnik");
+      } 
       counterDistance++;
     }
     else if(abs(cm-lastDistance)>lastDistance*0.4 && counterDistance>=4){
-      Serial.println("Provalnik");
+      if(alarmFlag == true){
+        Serial.println("Provalnik");
+      }     
       counterDistance=0;
       flagDistance=false;
     }
