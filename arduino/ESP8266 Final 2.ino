@@ -13,7 +13,7 @@ long duration, cm, inches;
 long lastDistance;
 boolean flagDistance = false;
 int counterDistance = 0;
-boolean alarmFlag = false;
+boolean alarmFlag = true;
 
 // MPU6050 Slave Device Address
 const uint8_t MPU6050SlaveAddress = 0x68;
@@ -43,6 +43,7 @@ int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
 
 int relayPinBulb = 16;
 int relayPinFan = 15;
+int buzzerPin = 2;
 int temperatureMax = 26;
 int temperatureMin = 24;
 int heating_body = 14;
@@ -85,9 +86,13 @@ void setup() {
   MPU6050_Init();
   pinMode(relayPinFan, OUTPUT);
   pinMode(relayPinBulb, OUTPUT);
+  //pinMode(buzzerPin, OUTPUT);
+  analogWrite(buzzerPin, LOW);
   digitalWrite(relayPinFan, LOW);
   client.subscribe("home/device02/switchLight");
   client.subscribe("home/device02/alarmSwitch");
+  client.subscribe("home/device02/fanMinimumValue");
+  client.subscribe("home/device02/fanMaximumValue");
   analogWrite(heating_body, 0); //disable pwm at beginning
 }
 
@@ -149,6 +154,7 @@ void loop() {
   Serial.print(" Gz: "); Serial.println(Gz);
   if(Gx > 4 || Gx < -6 && Gy > 4 || Gy  < -6 && Gz > 4 || Gz  < -6){
     Serial.println("Potres!!!");
+    tone(buzzerPin,1000, 1000);
   }
   Serial.print("relayPinBulb: ");
   Serial.println(digitalRead(relayPinBulb));
@@ -194,6 +200,7 @@ void loop() {
     else if(abs(cm-lastDistance)>lastDistance*0.4 && counterDistance>=4){
       if(alarmFlag == true){
         Serial.println("Provalnik");
+        tone(buzzerPin,500, 1000);
       }     
       counterDistance=0;
       flagDistance=false;
