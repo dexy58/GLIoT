@@ -57,19 +57,19 @@ void setup() {
     client.setServer("192.168.1.162", 1883);
     client.setCallback(callback);
     while (!client.connected()) {
-    Serial.println("Connecting to MQTT...");
+      Serial.println("Connecting to MQTT...");
  
-    if (client.connect("device03", "openhabian", "openhabian" )) {
-      Serial.println("connected");  
-    } else {
-      Serial.print("failed with state ");
-      Serial.print(client.state());
-      delay(2000); 
+      if (client.connect("device03", "openhabian", "openhabian" )) {
+        Serial.println("connected");  
+      } else {
+        Serial.print("failed with state ");
+        Serial.print(client.state());
+        delay(2000); 
+      }
     }
-  }
-  pinMode(relayPin, OUTPUT);
-  dht.setup(2, DHTesp::DHT22);
-  client.subscribe("home/device03/switchLight");
+   pinMode(relayPin, OUTPUT);
+   dht.setup(2, DHTesp::DHT22);
+   client.subscribe("home/device03/switchLight");
 }
 
 void callback(char* topic, byte* payload, unsigned int length) { 
