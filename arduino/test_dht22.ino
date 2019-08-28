@@ -15,6 +15,9 @@ int counterDHT22 = 0;
 char temperatureChar[10];
 char humidityChar[10];
 
+const char TEMPERATURE_PUB[40] = "home/device03/temperature";
+const char HUMIDITY_PUB[40] = "home/device03/humidity";
+
 void setup() {
   delay(5000);
   //Serial Port begin
@@ -86,14 +89,14 @@ void loop() {
         Serial.println(measurement.humidity);
         sprintf(temperatureChar, "%f", measurement.temperature);
         sprintf(humidityChar, "%f", measurement.humidity);
-        client.publish("home/device03/temperature", temperatureChar);
-        client.publish("home/device03/humidity", humidityChar);
+        client.publish(TEMPERATURE_PUB, temperatureChar);
+        client.publish(HUMIDITY_PUB, humidityChar);
         counterDHT22=0;
       }
     }
     else{
-      client.publish("home/device03/temperature", "-99");
-      client.publish("home/device03/humidity", "-99");
+      client.publish(TEMPERATURE_PUB, "-99");
+      client.publish(HUMIDITY_PUB, "-99");
     }
     counterDHT22++;
     Serial.print("Get status string: ");
