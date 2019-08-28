@@ -10,6 +10,8 @@ void callback(char* topic, byte* payload, unsigned int length);
 
 boolean checkWiFiConnection = false;
 
+int counterDHT22 = 0;
+
 char temperatureChar[10];
 char humidityChar[10];
 
@@ -50,6 +52,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void loop() {
+  client.loop();
   if(WiFi.status() != WL_CONNECTED){
     delay(500);
     Serial.print(".");
@@ -75,22 +78,27 @@ void loop() {
   }
   else if(WiFi.status() == WL_CONNECTED){
     if(strcmp(dht.getStatusString(),"OK")==0){
-      TempAndHumidity measurement = dht.getTempAndHumidity(); 
-      Serial.print("Temperature: ");
-      Serial.println(measurement.temperature);
-      Serial.print("Humidity: ");
-      Serial.println(measurement.humidity);
-      sprintf(temperatureChar, "%f", measurement.temperature);
-      sprintf(humidityChar, "%f", measurement.humidity);
-      client.publish("home/device03/temperature", temperatureChar);
-      client.publish("home/device03/humidity", humidityChar);
+      if(counterDHT22 >= 240){
+        TempAndHumidity measurement = dht.getTempAndHumidity(); 
+        Serial.print("Temperature: ");
+        Serial.println(measurement.temperature);
+        Serial.print("Humidity: ");
+        Serial.println(measurement.humidity);
+        sprintf(temperatureChar, "%f", measurement.temperature);
+        sprintf(humidityChar, "%f", measurement.humidity);
+        client.publish("home/device03/temperature", temperatureChar);
+        client.publish("home/device03/humidity", humidityChar);
+        counterDHT22=0;
+      }
     }
     else{
       client.publish("home/device03/temperature", "-99");
       client.publish("home/device03/humidity", "-99");
     }
-    Serial.print("Get status string");
+    counterDHT22++;
+    Serial.print("Get status string: ");
     Serial.println(dht.getStatusString());
-    delay(2000);
+    Serial.println(counterDHT22);
+    delay(250);
   }
 }
