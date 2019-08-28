@@ -49,7 +49,7 @@ void loop() {
     Serial.print(".");
     checkWiFiConnection = true;
   }
-  else if(checkWiFiConnection==true){
+  else if(checkWiFiConnection==true && WiFi.status() == WL_CONNECTED){
     Serial.print("Connected, your IP address is: ");
     Serial.println(WiFi.localIP());
     client.setServer("192.168.1.162", 1883);
@@ -67,7 +67,7 @@ void loop() {
     }
     checkWiFiConnection = false;
   }
-  else{
+  else if(WiFi.status() == WL_CONNECTED){
     Serial.println(WiFi.status());
     sprintf(numberChar, "%f", i);
     client.publish("test", numberChar);
