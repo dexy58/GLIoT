@@ -1,9 +1,10 @@
 Group    Home                      "SmartHome GlobalLogic"   <house>                                       ["Building"]
+
 Group    F3                        "Third Floor"             <attic>         (Home)                        ["Attic"]
+
 Group    Bedroom                   "Bedroom"                 <bedroom>       (Home)                        ["Bedroom"]
 Group    GuestRoom                 "Guest Room"              <parents_4_3>   (Home)                        ["Room"]
 //Group    StorageRoom               "Storage Room"            <suitcase>      (Home)                        ["Room"]
-
 Number   Bedroom_Temperature       "Temperature"             <temperature>   (Bedroom, gTemperature)       ["Temperature"]   {channel="mqtt:topic:f7056111:temperatureChannel"}
 //Number   Bedroom_Humidity          "Humidity"                <humidity>      (Bedroom, gHumidity)          ["Humidity"]      {channel="mqtt:topic:f7056111:humidityChannel"}
 Switch  Bedroom_Light "Light" <light> (Bedroom, gLight) ["Lighting", "Switchable"] {channel="mqtt:topic:f7056111:Switch_light"}
@@ -16,9 +17,10 @@ Switch GuestRoom_Light "Light" <light> (GuestRoom, gLight) ["Lighting", "Switcha
 //Switch StorageRoom_Light "Light" <light> (StorageRoom, gLight) ["Lighting", "Switchable"] {channel=""}
 //Switch Bedroom_Curtains "Curtains" <light> (Bedroom, gLight) ["Lighting", "Switchable"] {channel="mqtt:topic:f7056111:curtainSwitch01"}
 //Number FanTemperatureMinimal "Temperature [%.1f °C]" <temperature> (Bedroom, gTemperature) {channel="mqtt:topic:f7056111:fanMinimumValue"}
-Dimmer Bedroom_FanMaxTemp "Fan 26-28 °C [%d]" <temperature_hot> (Bedroom, gBlind) ["Blinds", "Switchable"]   {channel="mqtt:topic:f7056111:temperatureMaxFan"}
-Dimmer Bedroom_FanMinTemp "Fan 23-25 °C [%d]" <temperature_cold> (Bedroom, gBlind) ["Blinds", "Switchable"] {channel="mqtt:topic:f7056111:temperatureMinimumFan"}
-
+Dimmer Bedroom_FanMaxTemp "Fan ON 26-28 °C [%d]" <temperature_hot> (Bedroom, gBlind) ["Blinds", "Switchable"]   {channel="mqtt:topic:f7056111:temperatureMaxFan"}
+Dimmer Bedroom_FanMinTemp "Fan OFF 23-25 °C [%d]" <temperature_cold> (Bedroom, gBlind) ["Blinds", "Switchable"] {channel="mqtt:topic:f7056111:temperatureMinimumFan"}
+Dimmer Bedroom_HeatMaxTemp "Heat MAX 11-21 °C [%d]" <radiator> (Bedroom, gBlind) ["Blinds", "Switchable"] {channel="mqtt:topic:f7056111:temperatureMaxHeat"}
+Dimmer Bedroom_HeatMinTemp "Heat MIN 0-10 °C [%d]" <radiator> (Bedroom, gBlind) ["Blinds", "Switchable"] {channel="mqtt:topic:f7056111:temperatureMinHeat"}
 Group:Number:AVG   gTemperature   "Temperature"   <temperature>   (Home)   ["Temperature"]
 Group:Number:AVG   gHumidity      "Humidity"      <humidity>      (Home)   ["Humidity"]
 Group:Dimmer   gBlind   "Change temperature"   <blinds>   (Home)   ["Blinds", "Switchable"]
