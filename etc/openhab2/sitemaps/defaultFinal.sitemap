@@ -15,12 +15,16 @@ sitemap smarthome_globallogic label="SmartHouse GlobalLogic" {
             Default item=GuestRoom_Humidity label="Guest Room"
             Default item=StorageRoom_Humidity label="Storage Room"
         }
-	Text label="Light" icon="light" {
+	Text label="Switches" icon="light" {
 	    Default item=Bedroom_Light label="Bedroom"
 	    Default item=GuestRoom_Light label="Guest Room"
 	    Default item=StorageRoom_Light label="Storage Room"
-            Default item=Bedroom_Curtains label="Bedroom Curtains"
+	    Default item=Bedroom_Curtains label="Bedroom Curtains"
 	    Default item=Bedroom_Alarm label="Bedroom alarm"
+	}
+	Text label="Interval changes" icon="chart"{
+	    Default item=Bedroom_FanMaxTemp label="Fan 26-28 °C"
+	    Default item=Bedroom_FanMinTemp label="Fan 23-25 °C"
 	}
     }
 }
