@@ -6,13 +6,21 @@ void callback(char* topic, byte* payload, unsigned int length);
 
 float i=0;
 char numberChar[10];
-boolean checkWiFiConnection = false;
+
+const char* ssid = "SmartHomeAP";              //WiFi variables
+const char* password =  "smarthome";
+
+const char* mqttServer = "192.168.1.162";    //MQTT variables
+const int mqttPort = 1883;
+
+const char* brokerUsername = "openhabian";
+const char* brokerPassword = "openhabian";
 
 void setup() {
   delay(5000);
   //Serial Port begin
   Serial.begin(9600);
-  WiFi.begin("SmartHomeAP", "smarthome");
+  WiFi.begin(ssid, password);
   Serial.print("Connecting");
   while (WiFi.status() != WL_CONNECTED){
     delay(500);
@@ -23,12 +31,12 @@ void setup() {
   Serial.print("Connected, your IP address is: ");
   Serial.println(WiFi.localIP());
   
-  client.setServer("192.168.1.162", 1883);
+  client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
   while (!client.connected()) {
     Serial.println("Connecting to MQTT...");
  
-    if (client.connect("device02", "openhabian", "openhabian" )) {
+    if (client.connect("device02", brokerUsername, brokerPassword )) {
       Serial.println("connected");  
     }
     else {
@@ -44,30 +52,23 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void loop() {
-  if(WiFi.status() != WL_CONNECTED){
+  while (WiFi.status() != WL_CONNECTED){
     delay(500);
-    Serial.print(".");
-    checkWiFiConnection = true;
+    Serial.println(WiFi.status());
   }
-  else if(checkWiFiConnection==true && WiFi.status() == WL_CONNECTED){
-    Serial.print("Connected, your IP address is: ");
-    Serial.println(WiFi.localIP());
-    client.setServer("192.168.1.162", 1883);
-    client.setCallback(callback);
-    while (!client.connected()) {
-      Serial.println("Connecting to MQTT...");
-      if (client.connect("device02", "openhabian", "openhabian" )) {
-        Serial.println("connected");  
-      }
-      else {
-        Serial.print("failed with state ");
-        Serial.print(client.state());
-        delay(2000); 
-      }
+  while (!client.connected()) {
+    Serial.println("Reconnecting to MQTT...");
+ 
+    if (client.connect("device02", brokerUsername, brokerPassword )) {
+      Serial.println("Connected to broker");  
     }
-    checkWiFiConnection = false;
+    else {
+      Serial.print("failed with state ");
+      Serial.println(client.state());
+      delay(2000); 
+    }
   }
-  else if(WiFi.status() == WL_CONNECTED){
+  if(WiFi.status() == WL_CONNECTED){
     Serial.println(WiFi.status());
     sprintf(numberChar, "%f", i);
     client.publish("test", numberChar);
