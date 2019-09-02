@@ -53,14 +53,14 @@ void setup() {
 void callback(char* topic, byte* payload, unsigned int length) {
   if (strcmp(topic,BACKYARD_RAMP_PUB)==0){
     if (!strncmp((char *)payload, "ON", length)) {
-      Serial.print("Raise ramp");
+      Serial.println("Raise ramp");
       for(int i = servo_ramp_lowered; i<=servo_ramp_raised;i++){
         servo_ramp.write(i);
         delay(15);
       }
     }
     else if (!strncmp((char *)payload, "OFF", length)) {
-      Serial.print("Lower ramp");
+      Serial.println("Lower ramp");
       for(int i = servo_ramp_raised; i>=servo_ramp_lowered;i--){
         servo_ramp.write(i);
         delay(15);
