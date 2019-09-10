@@ -8,7 +8,14 @@ PubSubClient client(espClient);
 
 void callback(char* topic, byte* payload, unsigned int length);
 
-boolean checkWiFiConnection = false;
+const char* ssid = "SmartHuawei";              //WiFi variables
+const char* password =  "smartstudent";
+
+const char* mqttServer = "192.168.43.24";    //MQTT variables
+const int mqttPort = 1883;
+
+const char* brokerUsername = "openhabian";
+const char* brokerPassword = "openhabian";
 
 int counterDHT22 = 0;
 
@@ -32,17 +39,25 @@ float result;
 float percentage;
 float heatMaxTemp = HEAT_MAX_TEMP;
 float heatMinTemp= HEAT_MIN_TEMP;
-float heat75percent=8.25;
-float heat50percent=5.5;
-float heat25percent=2.75;
 
 int heating_body = 16;
+int dht22Pin = 2;
+
+//equation for a line y=ax+b
+//a=(y2-y1)/(x2-x1)
+//b=y1-[(y2-y1)/(x2-x1)]*x1
+//x2=heatMaxTemp
+//x1=heatMinTemp
+float lineAValue=0;
+float lineBValue=0;
+int y2Value=1024;
+int y1Value=0;
 
 void setup() {
   delay(5000);
   //Serial Port begin
   Serial.begin(9600);
-  WiFi.begin("SmartHomeAP", "smarthome");
+  WiFi.begin(ssid, password);
   Serial.print("Connecting");
   while (WiFi.status() != WL_CONNECTED){
     delay(500);
@@ -53,12 +68,12 @@ void setup() {
   Serial.print("Connected, your IP address is: ");
   Serial.println(WiFi.localIP());
   
-  client.setServer("192.168.1.162", 1883);
+  client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
   while (!client.connected()) {
     Serial.println("Connecting to MQTT...");
  
-    if (client.connect("device02", "openhabian", "openhabian" )) {
+    if (client.connect("device02", brokerUsername, brokerPassword )) {
       Serial.println("Connected to broker");  
     }
     else {
@@ -67,7 +82,7 @@ void setup() {
       delay(2000); 
     }
   }
-  dht.setup(2, DHTesp::DHT22);
+  dht.setup(dht22Pin, DHTesp::DHT22);
   client.subscribe(FAN_MAX_TEMP_SUB);
   client.subscribe(FAN_MIN_TEMP_SUB);
   client.subscribe(HEATING_MAX_TEMP_SUB);
@@ -104,13 +119,15 @@ void callback(char* topic, byte* payload, unsigned int length) {
     heatMaxTemp = HEAT_MAX_TEMP+10*percentage;
     Serial.print("Current max temp: ");
     Serial.println(heatMaxTemp);
-    result = (heatMaxTemp - heatMinTemp)/4;
-    heat25percent = heatMinTemp + result;
-    heat50percent = heatMinTemp + 2*result;
-    heat75percent = heatMinTemp + 3*result;
-    Serial.println(heat25percent);
-    Serial.println(heat50percent);
-    Serial.println(heat75percent);
+    lineAValue = (y2Value-y1Value)/(heatMaxTemp-heatMinTemp);
+    lineBValue = y1Value - heatMinTemp*((y2Value-y1Value)/(heatMaxTemp-heatMinTemp));
+    Serial.print("Current line: y=");
+    Serial.print(lineAValue);
+    Serial.print("x");
+    if(lineBValue>=0){
+      Serial.print("+");
+    }
+    Serial.println(lineBValue);
   }
   else if (strcmp(topic,HEATING_MIN_TEMP_SUB)==0){
     char payload_string[length + 1];
@@ -121,42 +138,36 @@ void callback(char* topic, byte* payload, unsigned int length) {
     heatMinTemp = HEAT_MIN_TEMP+10*percentage;
     Serial.print("Current min temp: ");
     Serial.println(heatMinTemp);
-    result = (heatMaxTemp - heatMinTemp)/4;
-    heat25percent = heatMinTemp + result;
-    heat50percent = heatMinTemp + 2*result;
-    heat75percent = heatMinTemp + 3*result;
-    Serial.println(heat25percent);
-    Serial.println(heat50percent);
-    Serial.println(heat75percent);
+    lineAValue = (y2Value-y1Value)/(heatMaxTemp-heatMinTemp);
+    lineBValue = y1Value - heatMinTemp*((y2Value-y1Value)/(heatMaxTemp-heatMinTemp));
+    Serial.print("Current line: y=");
+    Serial.print(lineAValue);
+    Serial.print("x");
+    if(lineBValue>=0){
+      Serial.print("+");
+    }
+    Serial.println(lineBValue);
   }
 }
 
 void loop() {
   client.loop();
-  if(WiFi.status() != WL_CONNECTED){
+  while (WiFi.status() != WL_CONNECTED){
     delay(500);
-    Serial.print(".");
-    checkWiFiConnection = true;
+    Serial.println(WiFi.status());
   }
-  else if(checkWiFiConnection==true && WiFi.status() == WL_CONNECTED){
-    Serial.print("Connected, your IP address is: ");
-    Serial.println(WiFi.localIP());
-    client.setServer("192.168.1.162", 1883);
-    client.setCallback(callback);
-    while (!client.connected()) {
-      Serial.println("Connecting to MQTT...");
-      if (client.connect("device02", "openhabian", "openhabian" )) {
-        Serial.println("connected");  
-      }
-      else {
-        Serial.print("failed with state ");
-        Serial.print(client.state());
-        delay(2000); 
-      }
+  while (!client.connected()) {
+    Serial.println("Reconnecting to MQTT...");
+    if (client.connect("device02", brokerUsername, brokerPassword )) {
+      Serial.println("Connected to broker");  
     }
-    checkWiFiConnection = false;
+    else {
+      Serial.print("failed with state ");
+      Serial.println(client.state());
+      delay(2000); 
+    }
   }
-  else if(WiFi.status() == WL_CONNECTED){
+  if(WiFi.status() == WL_CONNECTED){
     if(strcmp(dht.getStatusString(),"OK")==0){
       if(counterDHT22 >= 240){
         TempAndHumidity measurement = dht.getTempAndHumidity(); 
@@ -169,23 +180,24 @@ void loop() {
         client.publish(TEMPERATURE_PUB, temperatureChar);
         client.publish(HUMIDITY_PUB, humidityChar);
         counterDHT22=0;
-        if(measurement.temperature<=heatMinTemp){
-          analogWrite(heating_body, 1024); //100% power
+        if(measurement.temperature<=heatMaxTemp && measurement.temperature>=heatMinTemp){
+          //turn on heater
+          int getPWM = lineAValue*measurement.temperature+lineBValue;
+          Serial.print("Current PWM value: ");
+          Serial.println(getPWM);
+          if(getPWM<0){
+            analogWrite(heating_body, 0);
+          }
+          else if(getPWM>1024){
+            analogWrite(heating_body, 1024);
+          }
+          else{
+            analogWrite(heating_body, getPWM);
+          }
         }
-        else if(measurement.temperature>heatMinTemp && measurement.temperature<=heat25percent){
-          analogWrite(heating_body, 819); //80% power
-        }
-        else if(measurement.temperature>heat25percent && measurement.temperature<=heat50percent){
-          analogWrite(heating_body, 614); //60& power
-        }
-        else if(measurement.temperature>heat50percent && measurement.temperature<=heat75percent){
-          analogWrite(heating_body, 409); //40% power
-        }
-        else if(measurement.temperature>heat75percent && measurement.temperature<=heatMaxTemp){
-          analogWrite(heating_body, 204); //20% power
-        }
-        else if(measurement.temperature>heatMaxTemp){
-          analogWrite(heating_body, 0); //0% power
+        else{
+          //turn off heater
+          analogWrite(heating_body, 0);
         }
       }
     }
@@ -194,9 +206,6 @@ void loop() {
       client.publish(HUMIDITY_PUB, "-99");
     }
     counterDHT22++;
-    //Serial.print("Get status string: ");
-    //Serial.println(dht.getStatusString());
-    //Serial.println(counterDHT22);
     delay(250);
   }
 }
