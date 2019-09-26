@@ -7,17 +7,16 @@ PubSubClient client(espClient);
 
 void callback(char* topic, byte* payload, unsigned int length);
 
-int trigPin = 13;    // Trigger
-int echoPin = 12;    // Echo
-long duration, cm, inches;
-long lastDistance;
+int trigPin = 15;    // Trigger
+int echoPin = 14;    // Echo
+long duration, inches;
+float cm, lastDistance;
 boolean flagDistance = false;
 int counterDistance = 0;
 boolean alarmFlag = true;
 
 // MPU6050 Slave Device Address
 const uint8_t MPU6050SlaveAddress = 0x68;
-
 // Select SDA and SCL pins for I2C communication 
 const uint8_t scl = 5;
 const uint8_t sda = 4;
@@ -41,19 +40,62 @@ const uint8_t MPU6050_REGISTER_SIGNAL_PATH_RESET  = 0x68;
 
 int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
 
-int relayPinBulb = 16;
-int relayPinFan = 15;
+int relayPinBulb = 12;
+int relayPinFan = 13;
 int buzzerPin = 2;
-int temperatureMax = 26;
-int temperatureMin = 24;
 int heating_body = 14;
-char temperatureChar[10];
+
+int counterTemperature = 0;
+char temperatureChar[50];
+char distanceChar[50];
+
+const char* ssid = "SmartHuawei";              //WiFi variables
+const char* password =  "smartstudent";
+
+const char* mqttServer = "192.168.43.24";    //MQTT variables
+const int mqttPort = 1883;
+
+const char* brokerUsername = "openhabian";
+const char* brokerPassword = "openhabian";
+
+const char TEMPERATURE_PUB[40] = "home/room2/temp";
+const char FAN_MAX_TEMP_SUB[40]="home/room2/tempMaxFan";
+const char FAN_MIN_TEMP_SUB[40]="home/room2/tempMinFan";
+const char HEATING_MAX_TEMP_SUB[40]="home/room2/tempMaxHeat";
+const char HEATING_MIN_TEMP_SUB[40]="home/room2/tempMinHeat";
+const char ALARM_SUB[40] = "home/room2/alarmSwitch";
+const char SWITCH_SUB[40]="home/room2/switchLight";
+const char DISTANCE_PUB[40]="home/room2/dist";
+const char RASP_FEEDBACK[40]="rasp/feedback02";
+const int FAN_MAX_TEMP = 26;
+const int FAN_MIN_TEMP = 23;
+const int HEAT_MAX_TEMP = 11;
+const int HEAT_MIN_TEMP = 0;
+
+float fanMaxTemp = FAN_MAX_TEMP;
+float fanMinTemp = FAN_MIN_TEMP;
+float result;
+float percentage;
+float heatMaxTemp = HEAT_MAX_TEMP;
+float heatMinTemp= HEAT_MIN_TEMP;
+
+//equation for a line y=ax+b
+//a=(y2-y1)/(x2-x1)
+//b=y1-[(y2-y1)/(x2-x1)]*x1
+//x2=heatMaxTemp
+//x1=heatMinTemp
+float lineAValue=0;
+float lineBValue=0;
+int y1Value=1024;
+int y2Value=0;
+
+int sendMeasuredData = 1;
  
 void setup() {
   delay(5000);
   //Serial Port begin
   Serial.begin(9600);
-  WiFi.begin("SmartHomeAP", "smarthome");
+  WiFi.begin(ssid, password);
   Serial.print("Connecting");
   while (WiFi.status() != WL_CONNECTED){
     delay(500);
@@ -61,20 +103,20 @@ void setup() {
   }
   Serial.println();
 
-  Serial.print("Connected, IP address: ");
+  Serial.print("Connected, your IP address is: ");
   Serial.println(WiFi.localIP());
   
-  client.setServer("192.168.1.162", 1883);
+  client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
   while (!client.connected()) {
     Serial.println("Connecting to MQTT...");
  
-    if (client.connect("device02", "openhabian", "openhabian" )) {
+    if (client.connect("device02", brokerUsername, brokerPassword )) {
       Serial.println("connected");  
     }
     else {
       Serial.print("failed with state ");
-      Serial.print(client.state());
+      Serial.println(client.state());
       delay(2000); 
     }
   }
@@ -89,17 +131,18 @@ void setup() {
   //pinMode(buzzerPin, OUTPUT);
   analogWrite(buzzerPin, LOW);
   digitalWrite(relayPinFan, LOW);
-  client.subscribe("home/device02/switchLight");
-  client.subscribe("home/device02/alarmSwitch");
-  client.subscribe("home/device02/fanMinimumValue");
-  client.subscribe("home/device02/fanMaximumValue");
+  client.subscribe(FAN_MAX_TEMP_SUB);
+  client.subscribe(FAN_MIN_TEMP_SUB);
+  client.subscribe(HEATING_MAX_TEMP_SUB);
+  client.subscribe(HEATING_MIN_TEMP_SUB);
+  client.subscribe(SWITCH_SUB);
+  client.subscribe(ALARM_SUB);
+  client.subscribe(RASP_FEEDBACK);
   analogWrite(heating_body, 0); //disable pwm at beginning
 }
 
 void callback(char* topic, byte* payload, unsigned int length) { 
-  Serial.print("Message arrived in topic: ");
-  Serial.println(topic);
-  if (strcmp(topic,"home/device02/switchLight")==0){
+  if (strcmp(topic,SWITCH_SUB)==0){
     if (!strncmp((char *)payload, "ON", length)) {
       Serial.print("ON");
       digitalWrite(relayPinBulb, HIGH);
@@ -109,7 +152,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
       digitalWrite(relayPinBulb, LOW);
     }
   }
-  else if (strcmp(topic,"home/device02/alarmSwitch")==0){
+  else if (strcmp(topic,ALARM_SUB)==0){
     if (!strncmp((char *)payload, "ON", length) && alarmFlag==false) {
       alarmFlag=true;
       Serial.println("Ukljucen alarm");
@@ -119,119 +162,235 @@ void callback(char* topic, byte* payload, unsigned int length) {
       Serial.println("Iskljucen alarm");
     }
   }
-  else{
-    Serial.print("Message:");
-    for (int i = 0; i < length; i++) {
-      Serial.print((char)payload[i]);
+  else if (strcmp(topic,FAN_MAX_TEMP_SUB)==0){
+    char payload_string[length + 1];
+    memcpy(payload_string, payload, length);
+    payload_string[length] = '\0';
+    result = atoi(payload_string);
+    percentage = (float)result/100.0;
+    fanMaxTemp = FAN_MAX_TEMP+2*percentage;
+    Serial.print("Current max temp: ");
+    Serial.println(fanMaxTemp);
+  }
+  else if(strcmp(topic,FAN_MIN_TEMP_SUB)==0){
+    char payload_string[length + 1];
+    memcpy(payload_string, payload, length);
+    payload_string[length] = '\0';
+    result = atoi(payload_string);
+    percentage = (float)result/100.0;
+    fanMinTemp = FAN_MIN_TEMP+2*percentage;
+    Serial.print("Current min temp: ");
+    Serial.println(fanMinTemp);
+  }
+  else if (strcmp(topic,HEATING_MAX_TEMP_SUB)==0){
+    char payload_string[length + 1];
+    memcpy(payload_string, payload, length);
+    payload_string[length] = '\0';
+    result = atoi(payload_string);
+    percentage = (float)result/100.0;
+    heatMaxTemp = HEAT_MAX_TEMP+10*percentage;
+    Serial.print("Current max temp: ");
+    Serial.println(heatMaxTemp);
+    lineAValue = (y2Value-y1Value)/(heatMaxTemp-heatMinTemp);
+    lineBValue = y1Value - heatMinTemp*((y2Value-y1Value)/(heatMaxTemp-heatMinTemp));
+    Serial.print("Current line: y=");
+    Serial.print(lineAValue);
+    Serial.print("x");
+    if(lineBValue>=0){
+      Serial.print("+");
+    }
+    Serial.println(lineBValue);
+  }
+  else if (strcmp(topic,HEATING_MIN_TEMP_SUB)==0){
+    char payload_string[length + 1];
+    memcpy(payload_string, payload, length);
+    payload_string[length] = '\0';
+    result = atoi(payload_string);
+    percentage = (float)result/100.0;
+    heatMinTemp = HEAT_MIN_TEMP+10*percentage;
+    Serial.print("Current min temp: ");
+    Serial.println(heatMinTemp);
+    lineAValue = (y2Value-y1Value)/(heatMaxTemp-heatMinTemp);
+    lineBValue = y1Value - heatMinTemp*((y2Value-y1Value)/(heatMaxTemp-heatMinTemp));
+    Serial.print("Current line: y=");
+    Serial.print(lineAValue);
+    Serial.print("x");
+    if(lineBValue>=0){
+      Serial.print("+");
+    }
+    Serial.println(lineBValue);
+  }
+  else if(strcmp(topic,RASP_FEEDBACK)==0){
+    Serial.println("Broker is ready");
+    if(sendMeasuredData==3){
+      Serial.println("Sada salji distance!");
+      sendMeasuredData=2;
+    }
+    else if(sendMeasuredData==4){
+      Serial.println("Sada salji temperature!");
+      sendMeasuredData=1;
     }
   }
+  Serial.println(topic);
   Serial.println();
   Serial.println("-----------------------"); 
 }
  
 void loop() {
-  client.loop();
-  double Ax, Ay, Az, T, Gx, Gy, Gz;
-  
-  Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
-  
-  //divide each with their sensitivity scale factor
-  Ax = (double)AccelX/AccelScaleFactor;
-  Ay = (double)AccelY/AccelScaleFactor;
-  Az = (double)AccelZ/AccelScaleFactor;
-  T = (double)Temperature/340+36.53; //temperature formula
-  Gx = (double)GyroX/GyroScaleFactor;
-  Gy = (double)GyroY/GyroScaleFactor;
-  Gz = (double)GyroZ/GyroScaleFactor;
-  float temperature = (float)T;
-
-  Serial.print("Ax: "); Serial.print(Ax);
-  Serial.print(" Ay: "); Serial.print(Ay);
-  Serial.print(" Az: "); Serial.print(Az);
-  Serial.print(" T: "); Serial.print(T);
-  Serial.print(" Gx: "); Serial.print(Gx);
-  Serial.print(" Gy: "); Serial.print(Gy);
-  Serial.print(" Gz: "); Serial.println(Gz);
-  if(Gx > 4 || Gx < -6 && Gy > 4 || Gy  < -6 && Gz > 4 || Gz  < -6){
-    Serial.println("Potres!!!");
-    tone(buzzerPin,1000, 1000);
+  while (WiFi.status() != WL_CONNECTED){
+    delay(500);
+    Serial.println(WiFi.status());
   }
-  Serial.print("relayPinBulb: ");
-  Serial.println(digitalRead(relayPinBulb));
-  Serial.print("relayPinFan: ");
-  Serial.println(digitalRead(relayPinFan));
-  if(T>=temperatureMax && digitalRead(relayPinFan)==0){
-    Serial.println("Turn on Fan");
-    digitalWrite(relayPinFan, HIGH);
-  }
-  else if (T<=temperatureMin && digitalRead(relayPinFan)==1){
-    Serial.println("Turn of Fan");
-    digitalWrite(relayPinFan, LOW);
-  }
-  
-  // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
-  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(5);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
- 
-  // Read the signal from the sensor: a HIGH pulse whose
-  // duration is the time (in microseconds) from the sending
-  // of the ping to the reception of its echo off of an object.
-  pinMode(echoPin, INPUT);
-  duration = pulseIn(echoPin, HIGH);
- 
-  // Convert the time into a distance
-  cm = (duration/2) / 29.1;     // Divide by 29.1 or multiply by 0.0343
-  inches = (duration/2) / 74;   // Divide by 74 or multiply by 0.0135
-  if(flagDistance == false){
-    lastDistance = cm;
-    flagDistance=true;
-  }
-  else if(flagDistance == true){
-    if(abs(cm-lastDistance)>lastDistance*0.4 && counterDistance>=0 && counterDistance<=3){
-      if(alarmFlag == true){
-        Serial.println("Potencijalni provalnik");
-      } 
-      counterDistance++;
+  while (!client.connected()) {
+    Serial.println("Reconnecting to MQTT...");
+    String clientId = "ESP8266Client-";
+    clientId += String(random(0xffff), HEX);
+    if (client.connect(clientId.c_str(), brokerUsername, brokerPassword )) {
+      Serial.println("Connected to broker");
+      client.subscribe(FAN_MAX_TEMP_SUB);
+      client.subscribe(FAN_MIN_TEMP_SUB);
+      client.subscribe(HEATING_MAX_TEMP_SUB);
+      client.subscribe(HEATING_MIN_TEMP_SUB);
+      client.subscribe(SWITCH_SUB);
+      client.subscribe(ALARM_SUB);
+      client.subscribe(RASP_FEEDBACK);  
     }
-    else if(abs(cm-lastDistance)>lastDistance*0.4 && counterDistance>=4){
-      if(alarmFlag == true){
-        Serial.println("Provalnik");
-        tone(buzzerPin,500, 1000);
-      }     
-      counterDistance=0;
-      flagDistance=false;
+    else {
+      Serial.print("failed with state ");
+      Serial.println(client.state());
+      delay(2000); 
+    }
+  }
+  
+  if(WiFi.status() == WL_CONNECTED && client.connected()){
+    double Ax, Ay, Az, T, Gx, Gy, Gz;
+    Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
+  
+    //divide each with their sensitivity scale factor
+    Ax = (double)AccelX/AccelScaleFactor;
+    Ay = (double)AccelY/AccelScaleFactor;
+    Az = (double)AccelZ/AccelScaleFactor;
+    T = (double)Temperature/340+36.53; //temperature formula
+    Gx = (double)GyroX/GyroScaleFactor;
+    Gy = (double)GyroY/GyroScaleFactor;
+    Gz = (double)GyroZ/GyroScaleFactor;
+    float temperature = (float)T;
+
+    Serial.print("Ax: "); Serial.print(Ax);
+    Serial.print(" Ay: "); Serial.print(Ay);
+    Serial.print(" Az: "); Serial.print(Az);
+    Serial.print(" T: "); Serial.print(T);
+    Serial.print(" Gx: "); Serial.print(Gx);
+    Serial.print(" Gy: "); Serial.print(Gy);
+    Serial.print(" Gz: "); Serial.println(Gz);
+    if(Gx > 4 || Gx < -6 && Gy > 4 || Gy  < -6 && Gz > 4 || Gz  < -6){
+      Serial.println("Potres!!!");
+      tone(buzzerPin,1000, 1000);
+    }
+    if(T>=fanMaxTemp && digitalRead(relayPinFan)==0){
+      Serial.println("Turn on Fan");
+      digitalWrite(relayPinFan, HIGH);
+    }
+    else if (T<=fanMinTemp && digitalRead(relayPinFan)==1){
+      Serial.println("Turn off Fan");
+      digitalWrite(relayPinFan, LOW);
+    }
+  
+    // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
+    // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(5);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+ 
+    // Read the signal from the sensor: a HIGH pulse whose
+    // duration is the time (in microseconds) from the sending
+    // of the ping to the reception of its echo off of an object.
+    pinMode(echoPin, INPUT);
+    duration = pulseIn(echoPin, HIGH);
+ 
+    // Convert the time into a distance
+    cm = (duration/2) / 29.1;     // Divide by 29.1 or multiply by 0.0343
+    inches = (duration/2) / 74;   // Divide by 74 or multiply by 0.0135
+    if(flagDistance == false){
+      lastDistance = cm;
+      flagDistance=true;
+    }
+    else if(flagDistance == true){
+      if(abs(cm-lastDistance)>lastDistance*0.4 && counterDistance>=0 && counterDistance<=3){
+        if(alarmFlag == true){
+          Serial.println("Potencijalni provalnik");
+        } 
+        counterDistance++;
+      }
+      else if(abs(cm-lastDistance)>lastDistance*0.4 && counterDistance>=4){
+        if(alarmFlag == true){
+          Serial.println("Provalnik");
+          tone(buzzerPin,500, 1000);
+        }     
+        counterDistance=0;
+        flagDistance=false;
+      }
+      else{
+        lastDistance = (lastDistance+cm)/2.0;
+        counterDistance=0;
+      }
+    }
+    if(T<=heatMaxTemp && T>=heatMinTemp){
+      //turn on heater
+      int getPWM = lineAValue*T+lineBValue;
+      Serial.print("Current PWM value: ");
+      Serial.println(getPWM);
+      if(getPWM<0){
+        analogWrite(heating_body, 0);
+      }
+      else if(getPWM>1024){
+        analogWrite(heating_body, 1024);
+      }
+      else{
+        analogWrite(heating_body, getPWM);
+      }
+    }
+    else if(T<heatMinTemp){
+      analogWrite(heating_body, 1024);
     }
     else{
-      lastDistance = (lastDistance+cm)/2.0;
-      counterDistance=0;
+      //turn off heater
+      analogWrite(heating_body, 0);
     }
+    if(counterTemperature>=240){
+      sprintf(temperatureChar, "%f", temperature);
+      sprintf(distanceChar, "%f", cm);
+      if(sendMeasuredData == 1){
+        sendMeasuredData = 3;
+        String message1 =  String("{temp: ") + temperatureChar + String(", topic: home/room2/temp}");
+        message1.toCharArray(temperatureChar, 50);
+        Serial.println("Saljem temperaturu...................................................................................");
+        client.publish(TEMPERATURE_PUB, temperatureChar, true);
+      }
+      else if(sendMeasuredData == 2){
+        sendMeasuredData = 4;
+        counterTemperature=0;
+        String message1 =  String("{dist: ") + distanceChar + String(", topic: home/room2/dist}");
+        message1.toCharArray(distanceChar, 50);
+        Serial.println("Saljem distance...................................................................................");
+        client.publish(DISTANCE_PUB, distanceChar, true);
+      }
+    }
+    Serial.println(counterTemperature);
+    counterTemperature++;
+    Serial.print(inches);
+    Serial.print("in, ");
+    Serial.print(cm);
+    Serial.print("cm, ");
+    Serial.print(lastDistance);
+    Serial.print("cm");
+    Serial.println();
+    client.loop();
+    delay(250);
   }
-  if(T<=15){
-    analogWrite(heating_body, 1024);
-  }
-  else if(T>15 && T<=19){
-    analogWrite(heating_body, 613);
-  }
-  else if(T>19 && T<=22){
-    analogWrite(heating_body, 204);
-  }
-  else if(T>22){
-    analogWrite(heating_body, 0);
-  }
-  sprintf(temperatureChar, "%f", temperature);
-  client.publish("home/device02/temperature", temperatureChar);
-  Serial.print(inches);
-  Serial.print("in, ");
-  Serial.print(cm);
-  Serial.print("cm, ");
-  Serial.print(lastDistance);
-  Serial.print("cm");
-  Serial.println();
-  delay(250);
+  
 }
 
 void I2C_Write(uint8_t deviceAddress, uint8_t regAddress, uint8_t data){
