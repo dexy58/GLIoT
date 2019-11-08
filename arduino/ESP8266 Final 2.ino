@@ -43,7 +43,7 @@ int16_t AccelX, AccelY, AccelZ, Temperature, GyroX, GyroY, GyroZ;
 int relayPinBulb = 12;
 int relayPinFan = 13;
 int buzzerPin = 2;
-int heating_body = 14;
+int heating_body = 16;
 
 int counterTemperature = 0;
 char temperatureChar[50];
@@ -64,7 +64,9 @@ const char FAN_MIN_TEMP_SUB[40]="home/room2/tempMinFan";
 const char HEATING_MAX_TEMP_SUB[40]="home/room2/tempMaxHeat";
 const char HEATING_MIN_TEMP_SUB[40]="home/room2/tempMinHeat";
 const char ALARM_SUB[40] = "home/room2/alarmSwitch";
+const char ALARM_PUB[40] = "home/room2/alarm";
 const char SWITCH_SUB[40]="home/room2/switchLight";
+const char SWITCH_PUB[40]="home/room2/light";
 const char DISTANCE_PUB[40]="home/room2/dist";
 const char RASP_FEEDBACK[40]="rasp/feedback02";
 const int FAN_MAX_TEMP = 26;
@@ -145,21 +147,31 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (strcmp(topic,SWITCH_SUB)==0){
     if (!strncmp((char *)payload, "ON", length)) {
       Serial.print("ON");
-      digitalWrite(relayPinBulb, HIGH);
+      digitalWrite(relayPinBulb, LOW);
+      //digitalWrite(relayPinFan, HIGH); //makni kasnije
+      char onRelay[4] ="ON";
+      client.publish(SWITCH_PUB, onRelay, true);
     }
     else{
       Serial.print("OFF");
-      digitalWrite(relayPinBulb, LOW);
+      digitalWrite(relayPinBulb, HIGH);
+      //digitalWrite(relayPinFan, LOW); //makni kasnije
+      char offRelay[5] ="OFF";
+      client.publish(SWITCH_PUB, offRelay, true);
     }
   }
   else if (strcmp(topic,ALARM_SUB)==0){
     if (!strncmp((char *)payload, "ON", length) && alarmFlag==false) {
       alarmFlag=true;
       Serial.println("Ukljucen alarm");
+      char onRelay[4] ="ON";
+      client.publish(ALARM_PUB, onRelay, true);
     }
     else if(!strncmp((char *)payload, "OFF", length) && alarmFlag==true){
       alarmFlag=false;
       Serial.println("Iskljucen alarm");
+      char offRelay[4] ="OFF";
+      client.publish(ALARM_PUB, offRelay, true);
     }
   }
   else if (strcmp(topic,FAN_MAX_TEMP_SUB)==0){
@@ -253,7 +265,8 @@ void loop() {
       client.subscribe(HEATING_MIN_TEMP_SUB);
       client.subscribe(SWITCH_SUB);
       client.subscribe(ALARM_SUB);
-      client.subscribe(RASP_FEEDBACK);  
+      client.subscribe(RASP_FEEDBACK);
+      counterTemperature=0;
     }
     else {
       Serial.print("failed with state ");
@@ -261,9 +274,7 @@ void loop() {
       delay(2000); 
     }
   }
-  
-  if(WiFi.status() == WL_CONNECTED && client.connected()){
-    double Ax, Ay, Az, T, Gx, Gy, Gz;
+  double Ax, Ay, Az, T, Gx, Gy, Gz;
     Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
   
     //divide each with their sensitivity scale factor
@@ -283,7 +294,7 @@ void loop() {
     Serial.print(" Gx: "); Serial.print(Gx);
     Serial.print(" Gy: "); Serial.print(Gy);
     Serial.print(" Gz: "); Serial.println(Gz);
-    if(Gx > 4 || Gx < -6 && Gy > 4 || Gy  < -6 && Gz > 4 || Gz  < -6){
+    if((Gx > 6 || Gx < -6) && (Gy > 6 || Gy  < - 6) && (Gz > 6 || Gz  < - 6)){
       Serial.println("Potres!!!");
       tone(buzzerPin,1000, 1000);
     }
@@ -359,6 +370,8 @@ void loop() {
       //turn off heater
       analogWrite(heating_body, 0);
     }
+  
+  if(WiFi.status() == WL_CONNECTED && client.connected()){
     if(counterTemperature>=240){
       sprintf(temperatureChar, "%f", temperature);
       sprintf(distanceChar, "%f", cm);
@@ -378,6 +391,14 @@ void loop() {
         client.publish(DISTANCE_PUB, distanceChar, true);
       }
     }
+    if(counterTemperature>=480){
+      if(sendMeasuredData==3){
+        sendMeasuredData=2;
+      }
+      else if(sendMeasuredData==4){
+        sendMeasuredData=1;
+      }
+    }
     Serial.println(counterTemperature);
     counterTemperature++;
     Serial.print(inches);
@@ -388,6 +409,7 @@ void loop() {
     Serial.print("cm");
     Serial.println();
     client.loop();
+    //digitalWrite(relayPinFan, HIGH);
     delay(250);
   }
   
