@@ -3,6 +3,12 @@
 #include <PubSubClient.h>
 #include <DHTesp.h>
 #include <ESP8266WiFi.h>
+#include <Servo.h>
+Servo servo_ramp;
+
+int servo_pin = 16;
+int servo_ramp_lowered = 20;
+int servo_ramp_raised = 110;
 
 DHTesp dht;
 WiFiClient espClient;
@@ -36,7 +42,13 @@ int counterDHT22 = 0;
 const char TEMPERATURE_PUB[40] = "home/room3/temp";
 const char HUMIDITY_PUB[40] = "home/room3/hum";
 const char SWITCH_SUB[40]="home/room3/switchLight";
+const char SWITCH_PUB[40]="home/room3/light";
 const char RASP_FEEDBACK[40]="rasp/feedback03";
+const char BACKYARD_RAMP_PUB[40] = "home/backyard/ramp";
+
+int statusRFID = 0;  //0-logged off; 1-logged in
+const char RFID_PUB[40]="home/room3/logging";
+int sesionLasts = 0;
 
 int sendDHTData = 1;
 
@@ -88,6 +100,9 @@ void setup() {
   dht.setup(2, DHTesp::DHT22);
   client.subscribe(SWITCH_SUB);
   client.subscribe(RASP_FEEDBACK);
+  servo_ramp.attach(servo_pin);
+  servo_ramp.write(servo_ramp_lowered);
+  client.subscribe(BACKYARD_RAMP_PUB);
 }
 
 void callback(char* topic, byte* payload, unsigned int length) { 
@@ -97,10 +112,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
     if (!strncmp((char *)payload, "ON", length)) {
       Serial.print("ON");
       digitalWrite(relayPin, HIGH);
+      char onRelay[4] ="ON";
+      client.publish(SWITCH_PUB, onRelay, true);
     }
     else{
       Serial.print("OFF");
       digitalWrite(relayPin, LOW);
+      char offRelay[5] ="OFF";
+      client.publish(SWITCH_PUB, offRelay, true); 
     }
   }
   else if(strcmp(topic,RASP_FEEDBACK)==0){
@@ -112,6 +131,22 @@ void callback(char* topic, byte* payload, unsigned int length) {
     else if(sendDHTData==4){
       Serial.println("Sad posalji temperature");
       sendDHTData=1;
+    }
+  }
+  else if (strcmp(topic,BACKYARD_RAMP_PUB)==0){
+    if (!strncmp((char *)payload, "ON", length)) {
+      Serial.println("Raise ramp");
+      for(int i = servo_ramp_lowered; i<=servo_ramp_raised;i++){
+        servo_ramp.write(i);
+        delay(15);
+      }
+    }
+    else if (!strncmp((char *)payload, "OFF", length)) {
+      Serial.println("Lower ramp");
+      for(int i = servo_ramp_raised; i>=servo_ramp_lowered;i--){
+        servo_ramp.write(i);
+        delay(15);
+      }
     }
   }
   Serial.println();
@@ -134,6 +169,7 @@ void loop() {
         sendDHTData=1;
         client.subscribe(RASP_FEEDBACK);
         client.subscribe(SWITCH_SUB);
+        client.subscribe(BACKYARD_RAMP_PUB);
       }
       else {
         Serial.print("failed with state ");
@@ -159,18 +195,22 @@ void loop() {
         Serial.println(UIDstring);
         if(UIDstring == "575593" || UIDstring=="165302522"){
           Serial.println("Access GRANTED!");
-          if(digitalRead(relayPin)== LOW){
-            Serial.println("Turning light ON!");
-            digitalWrite(relayPin, HIGH);
+          if(statusRFID==0){
+            Serial.println("Logging in!");
+            //digitalWrite(relayPin, HIGH);
             char onRelay[4] ="ON";
-            client.publish(SWITCH_SUB, onRelay, true);          
+            //client.publish(SWITCH_PUB, onRelay, true);
+            client.publish(RFID_PUB, onRelay, true);
+            statusRFID=1;
           }
-          else if(digitalRead(relayPin)==HIGH){
-            Serial.println("Turning light OFF!");
-            digitalWrite(relayPin, LOW);
-            char offRelay[5] ="OFF";
-            client.publish(SWITCH_SUB, offRelay, true);
-          }
+//          else if(statusRFID==1 && sesionLasts>=1){
+//            Serial.println("Logging off!");
+//            //digitalWrite(relayPin, LOW);
+//            char offRelay[5] ="OFF";
+//            //client.publish(SWITCH_PUB, offRelay, true);
+//            client.publish(RFID_PUB, offRelay, true);
+//            statusRFID=0;
+//          }
         }
         else{
           Serial.println("Access DENIED!");
@@ -236,6 +276,15 @@ void loop() {
     else if(sendDHTData==4){
       sendDHTData=1;
     }
+  }
+  if(statusRFID==1){
+    sesionLasts++;
+  }
+  if(sesionLasts>40){
+    statusRFID=0;
+    sesionLasts=0;
+    char offRelay[5] ="OFF";
+    client.publish(RFID_PUB, offRelay, true);
   }
   client.loop();
 }
