@@ -69,6 +69,7 @@ const char SWITCH_SUB[40]="home/room2/switchLight";
 const char SWITCH_PUB[40]="home/room2/light";
 const char DISTANCE_PUB[40]="home/room2/dist";
 const char RASP_FEEDBACK[40]="rasp/feedback02";
+const char FAN_PUB[40]="home/room2/fan";
 const int FAN_MAX_TEMP = 26;
 const int FAN_MIN_TEMP = 23;
 const int HEAT_MAX_TEMP = 11;
@@ -234,14 +235,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   else if(strcmp(topic,RASP_FEEDBACK)==0){
     Serial.println("Broker is ready");
-    if(sendMeasuredData==3){
-      Serial.println("Sada salji distance!");
-      sendMeasuredData=2;
-    }
-    else if(sendMeasuredData==4){
-      Serial.println("Sada salji temperature!");
-      sendMeasuredData=1;
-    }
+//    if(sendMeasuredData==3){
+//      Serial.println("Sada salji distance!");
+//      sendMeasuredData=2;
+//    }
+//    else if(sendMeasuredData==4){
+//      Serial.println("Sada salji temperature!");
+//      sendMeasuredData=1;
+//    }
   }
   Serial.println(topic);
   Serial.println();
@@ -301,10 +302,14 @@ void loop() {
     if(T>=fanMaxTemp && digitalRead(relayPinFan)==0){
       Serial.println("Turn on Fan");
       digitalWrite(relayPinFan, HIGH);
+      char onRelay[4] ="ON";
+      client.publish(FAN_PUB, onRelay, true);
     }
     else if (T<=fanMinTemp && digitalRead(relayPinFan)==1){
       Serial.println("Turn off Fan");
       digitalWrite(relayPinFan, LOW);
+      char offRelay[5] ="OFF";
+      client.publish(FAN_PUB, offRelay, true);
     }
   
     // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
@@ -339,6 +344,13 @@ void loop() {
         if(alarmFlag == true){
           Serial.println("Provalnik");
           tone(buzzerPin,500, 1000);
+          sendMeasuredData = 4;
+          counterTemperature=0;
+          sprintf(distanceChar, "%f", 1);
+          String message1 =  String("{dist: ") + distanceChar + String(", topic: home/room2/dist}");
+          message1.toCharArray(distanceChar, 50);
+          Serial.println("Saljem alarm flag...................................................................................");
+          client.publish(DISTANCE_PUB, distanceChar, true);
         }     
         counterDistance=0;
         flagDistance=false;
@@ -375,20 +387,14 @@ void loop() {
     if(counterTemperature>=240){
       sprintf(temperatureChar, "%f", temperature);
       sprintf(distanceChar, "%f", cm);
-      if(sendMeasuredData == 1){
-        sendMeasuredData = 3;
-        String message1 =  String("{temp: ") + temperatureChar + String(", topic: home/room2/temp}");
-        message1.toCharArray(temperatureChar, 50);
-        Serial.println("Saljem temperaturu...................................................................................");
-        client.publish(TEMPERATURE_PUB, temperatureChar, true);
-      }
-      else if(sendMeasuredData == 2){
+      sendMeasuredData = 3;
+      String message1 =  String("{temp: ") + temperatureChar + String(", topic: home/room2/temp}");
+      message1.toCharArray(temperatureChar, 50);
+      Serial.println("Saljem temperaturu...................................................................................");
+      client.publish(TEMPERATURE_PUB, temperatureChar, true);
+      if(sendMeasuredData == 2){
         sendMeasuredData = 4;
         counterTemperature=0;
-        String message1 =  String("{dist: ") + distanceChar + String(", topic: home/room2/dist}");
-        message1.toCharArray(distanceChar, 50);
-        Serial.println("Saljem distance...................................................................................");
-        client.publish(DISTANCE_PUB, distanceChar, true);
       }
     }
     if(counterTemperature>=480){
